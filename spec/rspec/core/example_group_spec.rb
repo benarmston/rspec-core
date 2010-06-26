@@ -29,6 +29,26 @@ module RSpec::Core
         examples_run.should have(1).example
       end
 
+      context "with a failure in the top level group" do
+        it "runs its children " do
+          examples_run = []
+          group = ExampleGroup.describe("parent") do
+            it "fails" do
+              examples_run << example
+              raise "fail"
+            end
+            describe("child") do
+              it "does something" do
+                examples_run << example
+              end
+            end
+          end
+
+          group.run_all
+          examples_run.should have(2).examples
+        end
+      end
+
       describe "descendants" do
         it "returns self + all descendants" do
           group = ExampleGroup.describe("parent") do
@@ -124,6 +144,22 @@ module RSpec::Core
       context "with a string as the first parameter" do
         it "is nil" do
           ExampleGroup.describe("i'm a computer") { }.describes.should be_nil
+        end
+      end
+
+      context "with a constant in an outer group" do
+        context "and a string in an inner group" do
+          it "is the top level constant" do
+            group = ExampleGroup.describe(String) do
+              describe :symbol do
+                example "describes is String" do
+                  described_class.should eq(String)
+                end
+              end
+            end
+
+            group.run_all.should be_true
+          end
         end
       end
 
