@@ -166,6 +166,14 @@ module RSpec
         world.run_hook_filtered(:after, :all, self, example)
       end
 
+      def self.eval_around_eachs(example_group_instance, &example_block)
+        hooks = ancestors.reverse.map {|a| a.hooks[:around][:each] }.flatten
+        hooks.reverse.inject(example_block) do |accum, hook|
+          def accum.run; call; end
+          lambda { example_group_instance.instance_exec(accum, &hook) }
+        end.call
+      end
+
       def self.run(reporter)
         example_group_instance = new
         reporter.add_example_group(self)

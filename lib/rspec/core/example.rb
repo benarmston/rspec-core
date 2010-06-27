@@ -43,10 +43,7 @@ module RSpec
           run_before_each
           pending_declared_in_example = catch(:pending_declared_in_example) do
             @in_block = true
-            the_example = lambda do
-              @example_group_instance.instance_eval(&example_block) unless pending
-            end
-            around_hooks(@example_group_instance, @example_group_class, the_example).call
+            run_around_each_and_eval_example_block
             throw :pending_declared_in_example, false
           end
         rescue Exception => e
@@ -77,14 +74,6 @@ module RSpec
 
     private
 
-      def around_hooks(example_group_instance, example_group_class, the_example)
-        hooks = example_group_class.ancestors.reverse.map{|a| a.hooks[:around][:each]}.flatten
-        hooks.reverse.inject(the_example) do |accum, hook|
-          def accum.run; call; end
-          lambda { example_group_instance.instance_exec(accum, &hook) }
-        end
-      end
-
       def run_started
         record_results :started_at => Time.now
       end
@@ -114,6 +103,12 @@ module RSpec
       def run_before_each
         @example_group_instance._setup_mocks if @example_group_instance.respond_to?(:_setup_mocks)
         @example_group_class.eval_before_eachs(@example_group_instance)
+      end
+
+      def run_around_each_and_eval_example_block
+        @example_group_class.eval_around_eachs(@example_group_instance) do
+          @example_group_instance.instance_eval(&example_block) unless pending
+        end
       end
 
       def run_after_each
