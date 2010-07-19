@@ -175,15 +175,16 @@ module RSpec
         world.run_hook_filtered(:after, :each, self, example)
       end
 
-      def self.eval_around_eachs(example_group_instance, wrapped_example)
-        around_hooks.reverse.inject(wrapped_example) do |wrapper, hook|
-          def wrapper.run; call; end
-          lambda { example_group_instance.instance_exec(wrapper, &hook) }
-        end.call
+      def self.eval_around_alls(example_group_instance, &wrapped_example_group)
+        run_around_hooks(find_hooks(:around, :all).reverse, example_group_instance, wrapped_example_group)
       end
 
-      def self.around_hooks
-        (world.find_hook(:around, :each, self) + ancestors.reverse.map{|a| a.find_hook(:around, :each, self)}).flatten
+      def self.eval_around_eachs(example_group_instance, wrapped_example)
+        run_around_hooks(find_hooks(:around, :each).reverse, example_group_instance, wrapped_example)
+      end
+
+      def self.find_hooks(hook, scope)
+        (world.find_hook(:around, scope, self) + ancestors.reverse.map{|a| a.find_hook(:around, scope, self)}).flatten
       end
 
       def self.eval_after_alls(example)
@@ -197,13 +198,15 @@ module RSpec
         @reporter = reporter
         example_group_instance = new
         reporter.add_example_group(self)
-        begin
-          eval_before_alls(example_group_instance)
-          result_for_this_group = run_examples(example_group_instance, reporter)
-          results_for_descendants = children.map {|child| child.run(reporter)}.all?
-          result_for_this_group && results_for_descendants
-        ensure
-          eval_after_alls(example_group_instance)
+        eval_around_alls(example_group_instance) do
+          begin
+            eval_before_alls(example_group_instance)
+            result_for_this_group = run_examples(example_group_instance, reporter)
+            results_for_descendants = children.map {|child| child.run(reporter)}.all?
+            result_for_this_group && results_for_descendants
+          ensure
+            eval_after_alls(example_group_instance)
+          end
         end
       end
 

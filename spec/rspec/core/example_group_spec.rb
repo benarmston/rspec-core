@@ -254,6 +254,19 @@ module RSpec::Core
         order.should == [3,2,1]
       end
 
+      it "runs the around alls in order" do
+        group = ExampleGroup.describe
+        order = []
+        group.around(:all) {|example| order << 1; example.run }
+        group.around(:all) {|example| order << 2; example.run }
+        group.around(:all) {|example| order << 3; example.run }
+        group.example("example") {}
+
+        group.run_all
+
+        order.should == [1,2,3]
+      end
+
       it "runs before_all_defined_in_config, before all, before each, example, after each, after all, after_all_defined_in_config in that order" do
         order = []
 

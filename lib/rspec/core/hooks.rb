@@ -81,7 +81,7 @@ module RSpec
 
       def hooks
         @hooks ||= {
-          :around => { :each => AroundHooks.new },
+          :around => { :each => AroundHooks.new, :all => AroundHooks.new },
           :before => { :each => BeforeHooks.new, :all => BeforeHooks.new, :suite => BeforeHooks.new },
           :after => { :each => AfterHooks.new, :all => AfterHooks.new, :suite => AfterHooks.new }
         }
@@ -117,6 +117,13 @@ module RSpec
 
       def find_hook(hook, scope, group)
         hooks[hook][scope].find_hooks_for(group)
+      end
+
+      def run_around_hooks(hooks, group, example=nil)
+        hooks.inject(example) do |wrapper, hook|
+          def wrapper.run; call; end
+          lambda { group.instance_exec(wrapper, &hook) }
+        end.call
       end
     end
   end
