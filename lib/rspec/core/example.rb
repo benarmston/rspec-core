@@ -83,7 +83,7 @@ module RSpec
       end
 
       def with_around_hooks(&wrapped_example)
-        @example_group_class.eval_around_eachs(@example_group_instance, wrapped_example).call
+        @example_group_class.eval_around_eachs(@example_group_instance, wrapped_example)
       end
 
       def start(reporter)

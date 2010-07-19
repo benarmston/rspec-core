@@ -179,7 +179,7 @@ module RSpec
         around_hooks.reverse.inject(wrapped_example) do |wrapper, hook|
           def wrapper.run; call; end
           lambda { example_group_instance.instance_exec(wrapper, &hook) }
-        end
+        end.call
       end
 
       def self.around_hooks
